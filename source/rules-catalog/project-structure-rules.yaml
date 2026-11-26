@@ -1,0 +1,224 @@
+rules:
+  - id: PRJ-STRUCT-0001
+    title: Spring Boot project layout
+    level: MUST
+    owner: Backend Guild
+    applied-to:
+      languages: [java, kotlin]
+      frameworks: [spring]
+      types: [api, worker, batch]
+    since: "0.1.0"
+    description: Spring Boot projects must follow the standard package-by-feature layout.
+    content: |
+      src/main/java/com/company/servicename/
+        feature1/
+          Feature1Controller.java
+          Feature1Service.java
+          Feature1Repository.java
+          dto/
+        feature2/
+        config/
+        common/
+      src/main/resources/
+        application.yml
+        application-local.yml
+      src/test/java/ mirrors the main tree.
+
+  - id: PRJ-STRUCT-0002
+    title: FastAPI project layout
+    level: MUST
+    owner: Backend Guild
+    applied-to:
+      languages: [python]
+      frameworks: [fastapi]
+      types: [api]
+    since: "0.1.0"
+    description: FastAPI projects must follow the router-based package layout.
+    content: |
+      src/app/
+        main.py           (FastAPI app factory)
+        routers/
+          feature1.py     (APIRouter)
+          feature2.py
+        services/
+        repositories/
+        models/           (SQLAlchemy or Pydantic models)
+        schemas/          (Pydantic request/response schemas)
+        middleware/
+        config.py
+      tests/ mirrors the src/app tree.
+
+  - id: PRJ-STRUCT-0003
+    title: React SPA project layout
+    level: MUST
+    owner: Frontend Guild
+    applied-to:
+      languages: [typescript]
+      frameworks: [react]
+      types: [spa]
+    since: "0.1.0"
+    description: React SPA projects must follow the feature-based directory structure.
+    content: |
+      src/
+        features/
+          feature1/
+            components/
+            hooks/
+            api/
+            Feature1Page.tsx
+          feature2/
+        shared/
+          components/
+          hooks/
+          utils/
+        app/
+          App.tsx
+          routes.tsx
+        assets/
+      Avoid grouping by technical role (e.g., all components in one folder).
+
+  - id: PRJ-STRUCT-0004
+    title: Go project layout
+    level: MUST
+    owner: Platform Team
+    applied-to:
+      languages: [go]
+      frameworks: [ALL]
+      types: [api, cli, worker]
+    since: "0.1.0"
+    description: Go projects must follow the standard Go project layout conventions.
+    content: |
+      cmd/
+        myapp/
+          main.go
+      internal/
+        feature1/
+        feature2/
+        config/
+      pkg/              (only for truly reusable public packages)
+      api/              (OpenAPI specs, proto files)
+      The internal/ directory prevents external imports. Business logic
+      lives under internal/. The cmd/ directory contains entry points only.
+
+  - id: PRJ-STRUCT-0005
+    title: NestJS project layout
+    level: MUST
+    owner: Backend Guild
+    applied-to:
+      languages: [typescript]
+      frameworks: [nestjs]
+      types: [api]
+    since: "0.1.0"
+    description: NestJS projects must follow the module-based layout.
+    content: |
+      src/
+        feature1/
+          feature1.module.ts
+          feature1.controller.ts
+          feature1.service.ts
+          dto/
+        feature2/
+        common/
+          filters/
+          guards/
+          interceptors/
+        config/
+        app.module.ts
+        main.ts
+      Each feature is a self-contained NestJS module.
+
+  - id: PRJ-STRUCT-0006
+    title: .NET project layout
+    level: MUST
+    owner: Backend Guild
+    applied-to:
+      languages: [csharp]
+      frameworks: [dotnet]
+      types: [api, worker]
+    since: "0.1.0"
+    description: .NET projects must follow the clean architecture layout.
+    content: |
+      MyService.sln
+      src/
+        MyService.Api/          (controllers, middleware, startup)
+        MyService.Application/  (services, DTOs, interfaces)
+        MyService.Domain/       (entities, value objects, domain events)
+        MyService.Infrastructure/ (repositories, external clients)
+      tests/
+        MyService.UnitTests/
+        MyService.IntegrationTests/
+      Each layer references only the layer below it.
+
+  - id: PRJ-STRUCT-0007
+    title: Django project layout
+    level: MUST
+    owner: Backend Guild
+    applied-to:
+      languages: [python]
+      frameworks: [django]
+      types: [ssr]
+    since: "0.2.0"
+    description: Django projects must use the app-per-domain layout.
+    content: |
+      project/
+        settings/
+          base.py
+          local.py
+          production.py
+        urls.py
+        wsgi.py
+      apps/
+        feature1/
+          models.py
+          views.py
+          admin.py
+          urls.py
+          templates/feature1/
+        feature2/
+      templates/     (base templates)
+      static/
+      Each Django app corresponds to one business domain.
+
+  - id: PRJ-STRUCT-0008
+    title: Terraform module layout
+    level: MUST
+    owner: Cloud Engineering
+    applied-to:
+      languages: [ALL]
+      frameworks: [ALL]
+      types: [iac]
+    since: "0.1.0"
+    description: Terraform repositories must follow the standard module structure.
+    content: |
+      environments/
+        dev/
+          main.tf
+          variables.tf
+          backend.tf
+        staging/
+        production/
+      modules/
+        networking/
+        compute/
+        database/
+      Each environment directory contains only variable assignments
+      and module invocations. Reusable logic lives in modules/.
+
+  - id: PRJ-STRUCT-0009
+    title: Library projects must separate public API from internals
+    level: MUST
+    owner: Platform Team
+    applied-to:
+      languages: [ALL]
+      frameworks: [ALL]
+      types: [library]
+    since: "0.1.0"
+    description: Shared libraries must clearly separate public API from internal implementation.
+    content: |
+      The public API surface must be explicitly defined:
+      - Java/Kotlin: use a module-info.java or package naming (api/ vs internal/)
+      - Python: use __all__ in __init__.py and prefix internal modules with _
+      - TypeScript: use an index.ts barrel file; do not export internals
+      - Go: use internal/ directory for non-exported packages
+      - C#: use the InternalsVisibleTo attribute sparingly; default to internal access
+      Consumers must only depend on the public API.

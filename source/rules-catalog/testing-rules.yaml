@@ -1,0 +1,150 @@
+rules:
+  - id: TEST-0001
+    title: Unit test coverage minimum 80%
+    level: SHOULD
+    owner: QA Guild
+    applied-to:
+      languages: [ALL]
+      frameworks: [ALL]
+      types: [ALL]
+    since: "0.1.0"
+    description: Projects should maintain at least 80% unit test line coverage.
+    content: |
+      Coverage is measured per module, not globally. New code must meet
+      the 80% threshold; legacy code is exempt until modified. Coverage
+      reports are generated in CI and published as build artifacts.
+      Coverage-only tests (testing getters/setters) do not count toward
+      meaningful coverage. Focus on testing behavior and edge cases.
+
+  - id: TEST-0002
+    title: Integration tests for API endpoints
+    level: MUST
+    owner: QA Guild
+    applied-to:
+      languages: [ALL]
+      frameworks: [ALL]
+      types: [api]
+    since: "0.1.0"
+    description: Every API endpoint must have integration tests covering happy and error paths.
+    content: |
+      Integration tests exercise the full request pipeline:
+      - HTTP request through the framework
+      - Middleware, validation, business logic
+      - Database interaction (using test containers or in-memory DB)
+      Each endpoint must test: successful response, validation error,
+      authentication failure, and at least one business error case.
+      Tests run against a real (embedded or containerized) database.
+
+  - id: TEST-0003
+    title: Spring Boot tests use @SpringBootTest sparingly
+    level: SHOULD
+    owner: Backend Guild
+    applied-to:
+      languages: [java, kotlin]
+      frameworks: [spring]
+      types: [api, worker, batch]
+    since: "0.1.0"
+    description: Spring Boot tests should minimize full-context loading for speed.
+    content: |
+      Test pyramid:
+      - Unit tests: plain JUnit, no Spring context (fastest)
+      - Slice tests: @WebMvcTest, @DataJpaTest for focused integration
+      - Full tests: @SpringBootTest only for end-to-end scenarios
+      Most business logic tests should be unit tests. Use Testcontainers
+      for database tests. MockMvc is preferred over full HTTP for
+      controller tests.
+
+  - id: TEST-0004
+    title: Go tests use table-driven pattern
+    level: MUST
+    owner: Platform Team
+    applied-to:
+      languages: [go]
+      frameworks: [ALL]
+      types: [ALL]
+    since: "0.1.0"
+    description: Go tests must use the table-driven test pattern for parameterized scenarios.
+    content: |
+      Tests with multiple inputs use a slice of test cases:
+        tests := []struct{ name string; input Input; want Output }{...}
+        for _, tt := range tests { t.Run(tt.name, func(t *testing.T) {...}) }
+      This pattern provides clear naming per case, easy addition of new
+      cases, and subtests that can be run individually. Use testify/assert
+      for assertions. Test fixtures go in testdata/ directories.
+
+  - id: TEST-0005
+    title: Frontend component tests with Testing Library
+    level: MUST
+    owner: Frontend Guild
+    applied-to:
+      languages: [typescript]
+      frameworks: [react]
+      types: [spa, ssr]
+    since: "0.1.0"
+    description: React components must be tested with React Testing Library.
+    content: |
+      Test user behavior, not implementation details:
+      - Query by role, label, or text (not by CSS class or test ID)
+      - Simulate user events (click, type) rather than calling handlers
+      - Assert on visible output (text, attributes) not internal state
+      Snapshot tests are discouraged; they produce noisy diffs and false
+      confidence. E2E tests (Playwright) cover critical user journeys
+      separately.
+
+  - id: TEST-0006
+    title: Python tests use pytest exclusively
+    level: MUST
+    owner: Backend Guild
+    applied-to:
+      languages: [python]
+      frameworks: [ALL]
+      types: [ALL]
+    since: "0.1.0"
+    description: Python test suites must use pytest as the test runner.
+    content: |
+      unittest-style test classes are permitted but plain functions are
+      preferred. Use pytest fixtures for setup/teardown. Parametrize
+      tests with @pytest.mark.parametrize for multiple input scenarios.
+      For FastAPI: use httpx.AsyncClient with app fixture. For Django:
+      use pytest-django with the django_db marker. Mocking uses
+      unittest.mock or pytest-mock.
+
+  - id: TEST-0007
+    title: .NET tests use xUnit
+    level: MUST
+    owner: Backend Guild
+    applied-to:
+      languages: [csharp]
+      frameworks: [dotnet]
+      types: [ALL]
+    since: "0.1.0"
+    description: .NET test projects must use xUnit as the test framework.
+    content: |
+      xUnit is the standard due to its parallel execution model and
+      modern assertions. Use:
+      - [Fact] for single-case tests
+      - [Theory] with [InlineData] for parameterized tests
+      - WebApplicationFactory<T> for integration tests
+      - Testcontainers for database tests
+      - NSubstitute or Moq for mocking
+      FluentAssertions library is recommended for readable assertions.
+
+  - id: TEST-0008
+    title: Terraform plans validated in CI
+    level: MUST
+    owner: Cloud Engineering
+    applied-to:
+      languages: [ALL]
+      frameworks: [ALL]
+      types: [iac]
+    since: "0.1.0"
+    description: Terraform changes must be validated with plan output reviewed in pull requests.
+    content: |
+      CI pipeline for Terraform PRs:
+      - terraform fmt -check
+      - terraform validate
+      - terraform plan (output saved and posted as PR comment)
+      - tfsec or checkov security scan
+      Plans that destroy or recreate critical resources require manual
+      approval. Drift detection runs on a weekly schedule against all
+      environments.

@@ -1,0 +1,126 @@
+rules:
+  - id: DEPS-0001
+    title: Spring Boot version must be latest LTS
+    level: MUST
+    owner: Backend Guild
+    applied-to:
+      languages: [java, kotlin]
+      frameworks: [spring]
+      types: [api, worker, batch]
+    since: "0.1.0"
+    description: Spring Boot projects must use the current LTS release train.
+    content: |
+      Services must track the latest Spring Boot 3.x LTS release. Minor
+      version upgrades are expected within 30 days of release. Major
+      version upgrades follow a coordinated rollout plan. The Spring
+      dependency BOM manages all transitive Spring dependency versions;
+      do not override them individually.
+
+  - id: DEPS-0002
+    title: Python projects must pin dependency versions
+    level: MUST
+    owner: Backend Guild
+    applied-to:
+      languages: [python]
+      frameworks: [fastapi, django]
+      types: [api, worker, batch, cli]
+    since: "0.1.0"
+    description: Python projects must pin all dependency versions via lockfile.
+    content: |
+      poetry.lock must be committed and used for installs. Direct
+      dependencies in pyproject.toml use >= with an upper bound (e.g.,
+      pydantic = ">=2.0,<3.0"). Dependabot or Renovate must be enabled
+      for automated upgrade PRs. Unpinned or * version specifiers are
+      prohibited.
+
+  - id: DEPS-0003
+    title: Frontend projects must not introduce new frameworks
+    level: MUST
+    owner: Frontend Guild
+    applied-to:
+      languages: [typescript, javascript]
+      frameworks: [react, angular, vue]
+      types: [spa, ssr]
+    since: "0.1.0"
+    description: New frontend framework dependencies require Architecture Board approval.
+    content: |
+      Only React (ADR-0002), Vue for internal tools (ADR-0015), and
+      Angular (maintenance only, ADR-0017) are approved. Introducing
+      Svelte, Solid, Lit, or other frameworks requires a written
+      proposal and Architecture Board approval. UI component libraries
+      must be from the approved list maintained by the Frontend Guild.
+
+  - id: DEPS-0004
+    title: NestJS projects use approved module versions
+    level: MUST
+    owner: Backend Guild
+    applied-to:
+      languages: [typescript]
+      frameworks: [nestjs]
+      types: [api]
+    since: "0.1.0"
+    description: NestJS projects must use approved @nestjs/ package versions.
+    content: |
+      All @nestjs/ packages must be on the same major version. The
+      approved NestJS version is tracked in the shared .npmrc config.
+      Passport, TypeORM, and Swagger modules must come from @nestjs/
+      scoped packages, not community alternatives. Prisma is the
+      approved alternative ORM if TypeORM is not suitable.
+
+  - id: DEPS-0005
+    title: Go modules must use approved dependency list
+    level: SHOULD
+    owner: Platform Team
+    applied-to:
+      languages: [go]
+      frameworks: [ALL]
+      types: [api, cli, worker]
+    since: "0.1.0"
+    description: Go dependencies should come from the approved module list.
+    content: |
+      Approved modules for common needs:
+      - HTTP router: chi or gin
+      - Logging: slog (stdlib) or zerolog
+      - Configuration: viper
+      - Database: pgx for PostgreSQL
+      - Testing: testify
+      Adding modules outside this list requires a brief justification
+      in the PR description. CGO dependencies are discouraged.
+
+  - id: DEPS-0006
+    title: Docker base images must come from approved registry
+    level: MUST
+    owner: Security Team
+    applied-to:
+      languages: [ALL]
+      frameworks: [ALL]
+      types: [api, worker, batch, cli]
+    since: "0.1.0"
+    description: Dockerfiles must use base images from the internal approved registry.
+    content: |
+      Base images must be pulled from the internal container registry
+      (registry.internal.company.com). Public Docker Hub images are
+      prohibited in Dockerfiles. The platform team publishes hardened
+      base images for:
+      - Java (Eclipse Temurin)
+      - Python (slim)
+      - Node.js (Alpine and Debian)
+      - Go (scratch or distroless)
+      - .NET (runtime and SDK)
+
+  - id: DEPS-0007
+    title: .NET projects use centralized package management
+    level: MUST
+    owner: Backend Guild
+    applied-to:
+      languages: [csharp]
+      frameworks: [dotnet]
+      types: [api, worker, batch]
+    since: "0.2.0"
+    description: .NET solutions must use Directory.Packages.props for version management.
+    content: |
+      All NuGet package versions are defined in Directory.Packages.props
+      at the solution root. Individual .csproj files reference packages
+      without version numbers. This prevents version drift across projects
+      in the same solution. Dependabot is configured to update the central
+      version file.

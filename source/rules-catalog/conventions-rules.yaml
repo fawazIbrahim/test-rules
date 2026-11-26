@@ -1,0 +1,147 @@
+rules:
+  - id: CONV-0001
+    title: Java code follows Google Java Style
+    level: MUST
+    owner: Backend Guild
+    applied-to:
+      languages: [java]
+      frameworks: [ALL]
+      types: [ALL]
+    since: "0.1.0"
+    description: Java source code must conform to Google Java Style Guide.
+    content: |
+      Enforce via google-java-format in CI. Key points:
+      - 2-space indentation
+      - Column limit of 100 characters
+      - Wildcard imports are prohibited
+      - Braces follow K&R style
+      IDE settings files for IntelliJ are provided in the shared config repo.
+
+  - id: CONV-0002
+    title: Kotlin code follows Kotlin coding conventions
+    level: MUST
+    owner: Backend Guild
+    applied-to:
+      languages: [kotlin]
+      frameworks: [ALL]
+      types: [ALL]
+    since: "0.1.0"
+    description: Kotlin source code must follow the official Kotlin coding conventions.
+    content: |
+      Enforce via ktlint in CI. Key points:
+      - 4-space indentation
+      - Use data classes for value objects
+      - Prefer val over var
+      - Use named arguments for functions with more than 3 parameters
+      - Use scope functions (let, apply, also) idiomatically, not excessively
+
+  - id: CONV-0003
+    title: TypeScript strict mode is mandatory
+    level: MUST
+    owner: Frontend Guild
+    applied-to:
+      languages: [typescript]
+      frameworks: [ALL]
+      types: [ALL]
+    since: "0.1.0"
+    description: All TypeScript projects must enable strict mode in tsconfig.json.
+    content: |
+      tsconfig.json must include "strict": true, which enables:
+      - strictNullChecks
+      - noImplicitAny
+      - strictFunctionTypes
+      - strictBindCallApply
+      Using 'any' type is prohibited except when interfacing with untyped
+      third-party libraries, and must be accompanied by a comment explaining why.
+
+  - id: CONV-0004
+    title: Python code follows Ruff formatter and linter
+    level: MUST
+    owner: Backend Guild
+    applied-to:
+      languages: [python]
+      frameworks: [ALL]
+      types: [ALL]
+    since: "0.1.0"
+    description: Python code must pass Ruff formatting and linting checks.
+    content: |
+      Ruff replaces Black, isort, and Flake8. Configuration in pyproject.toml:
+      - Line length: 88
+      - Target Python version matches the project minimum
+      - Enable rules: E, F, W, I, N, UP, B, SIM, RUF
+      Type hints are mandatory for all public function signatures.
+      Use pathlib over os.path for filesystem operations.
+
+  - id: CONV-0005
+    title: Go code follows gofmt and project conventions
+    level: MUST
+    owner: Platform Team
+    applied-to:
+      languages: [go]
+      frameworks: [ALL]
+      types: [ALL]
+    since: "0.1.0"
+    description: Go code must be formatted with gofmt and pass golangci-lint.
+    content: |
+      All Go code must pass gofmt with no diff. Additionally:
+      - Error messages start with lowercase, no trailing punctuation
+      - Context is the first parameter of functions that accept it
+      - Use errors.Is and errors.As instead of direct comparison
+      - Table-driven tests are the standard pattern
+      - Avoid init() functions; prefer explicit initialization
+      golangci-lint configuration is shared across all Go repositories.
+
+  - id: CONV-0006
+    title: React Native follows shared mobile conventions
+    level: MUST
+    owner: Mobile Guild
+    applied-to:
+      languages: [typescript]
+      frameworks: [react]
+      types: [mobile]
+    since: "0.2.0"
+    description: React Native projects must follow the shared mobile coding conventions.
+    content: |
+      - Use functional components with hooks exclusively
+      - Navigation uses React Navigation library
+      - State management uses Zustand or React Context (no Redux for new projects)
+      - Styles use StyleSheet.create, not inline objects
+      - Platform-specific code uses .ios.tsx and .android.tsx suffixes
+      - All text must go through the i18n system, never hardcoded
+
+  - id: CONV-0007
+    title: Kotlin Android code follows Kotlin Android style
+    level: MUST
+    owner: Mobile Guild
+    applied-to:
+      languages: [kotlin]
+      frameworks: [ALL]
+      types: [mobile]
+    since: "0.2.0"
+    description: Kotlin Android native modules must follow Android Kotlin style guide.
+    content: |
+      - Use Kotlin coroutines for all async operations
+      - ViewModels use StateFlow, not LiveData in new code
+      - Dependency injection via Hilt
+      - Resource naming follows type_feature_description pattern
+        (e.g., ic_profile_avatar, btn_login_submit)
+      - Compose is preferred over XML layouts for new UI code
+
+  - id: CONV-0008
+    title: C# code follows .NET coding conventions
+    level: MUST
+    owner: Backend Guild
+    applied-to:
+      languages: [csharp]
+      frameworks: [dotnet]
+      types: [ALL]
+    since: "0.1.0"
+    description: C# code must follow the Microsoft .NET coding conventions.
+    content: |
+      Enforce via dotnet-format and an .editorconfig at the repo root.
+      - PascalCase for public members, camelCase for local variables
+      - Prefix interfaces with I (e.g., IOrderService)
+      - Use file-scoped namespaces
+      - Prefer pattern matching over type checks
+      - Use async/await consistently; never block on Task.Result
+      - Nullable reference types must be enabled project-wide

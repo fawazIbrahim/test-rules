@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mdharness"
+version = "0.1.0"
+description = "Generate filtered Markdown (ADRs + rules) from YAML sources for coding agents"
+requires-python = ">=3.10"
+dependencies = [
+    "click>=8.1",
+    "pyyaml>=6.0",
+    "tabulate>=0.9",
+]
+
+[project.scripts]
+mdharness = "mdharness.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

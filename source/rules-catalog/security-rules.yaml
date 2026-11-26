@@ -1,0 +1,132 @@
+rules:
+  - id: SEC-0001
+    title: Validate all user input
+    level: MUST
+    owner: Security Team
+    applied-to:
+      languages: [ALL]
+      frameworks: [ALL]
+      types: [ALL]
+    waivable: false
+    since: "0.1.0"
+    description: All user input must be validated before processing.
+    content: |
+      Input validation must happen at the system boundary:
+      - API request bodies validated against schemas (JSON Schema, Pydantic, Bean Validation)
+      - Query parameters and path variables validated for type and range
+      - File uploads validated for size, type, and content
+      Use allow-lists over deny-lists. Reject unexpected fields.
+      Never trust client-side validation alone.
+
+  - id: SEC-0002
+    title: Use parameterized queries for database access
+    level: MUST
+    owner: Security Team
+    applied-to:
+      languages: [ALL]
+      frameworks: [ALL]
+      types: [api, worker, batch]
+    waivable: false
+    since: "0.1.0"
+    description: All database queries must use parameterized statements to prevent SQL injection.
+    content: |
+      String concatenation or interpolation for SQL queries is prohibited.
+      Use:
+      - Java: JPA/Hibernate named parameters or Spring JdbcTemplate
+      - Python: SQLAlchemy bound parameters or psycopg2 parameterized queries
+      - Go: pgx positional parameters ($1, $2)
+      - C#: Entity Framework LINQ or Dapper parameterized queries
+      - TypeScript: TypeORM query builder or Prisma
+      Raw SQL is permitted only via parameterized template methods.
+
+  - id: SEC-0003
+    title: Secrets must not be stored in source code
+    level: MUST
+    owner: Security Team
+    applied-to:
+      languages: [ALL]
+      frameworks: [ALL]
+      types: [ALL]
+    waivable: false
+    since: "0.1.0"
+    description: Credentials, API keys, and tokens must never appear in source code or config files.
+    content: |
+      Secrets are retrieved at runtime from HashiCorp Vault (ADR-0019).
+      Environment variables may reference Vault paths but must not contain
+      raw secret values in committed configuration. Pre-commit hooks must
+      run secret scanning (gitleaks or trufflehog). CI pipelines fail on
+      detected secrets. .env files are gitignored and never committed.
+
+  - id: SEC-0004
+    title: Authentication required for all API endpoints
+    level: MUST
+    owner: Security Team
+    applied-to:
+      languages: [ALL]
+      frameworks: [ALL]
+      types: [api]
+    since: "0.1.0"
+    description: All API endpoints must require authentication except explicitly whitelisted paths.
+    content: |
+      Authentication is enforced at the middleware/filter level, not per
+      endpoint. Only health check and OpenAPI documentation endpoints are
+      exempt. JWT bearer tokens are the standard authentication mechanism
+      for service-to-service and user-to-service calls. Token validation
+      must verify signature, expiration, issuer, and audience claims.
+
+  - id: SEC-0005
+    title: HTTPS required for all external communication
+    level: MUST
+    owner: Security Team
+    applied-to:
+      languages: [ALL]
+      frameworks: [ALL]
+      types: [api, spa, ssr]
+    waivable: false
+    since: "0.1.0"
+    description: All external-facing endpoints must use HTTPS with TLS 1.2 or higher.
+    content: |
+      TLS termination occurs at the load balancer or API gateway. Internal
+      service-to-service communication within the mesh uses mTLS. HTTP to
+      HTTPS redirect must be enabled. HSTS headers must be set with a
+      minimum max-age of one year. TLS certificates are managed via Vault
+      PKI or Let's Encrypt.
+
+  - id: SEC-0006
+    title: Frontend applications must prevent XSS
+    level: MUST
+    owner: Security Team
+    applied-to:
+      languages: [typescript, javascript]
+      frameworks: [react, angular, vue]
+      types: [spa, ssr]
+    waivable: false
+    since: "0.1.0"
+    description: Frontend applications must prevent cross-site scripting attacks.
+    content: |
+      - Never use dangerouslySetInnerHTML (React) or v-html (Vue) with user data
+      - Content Security Policy headers must be configured
+      - User-generated content must be sanitized with DOMPurify before rendering
+      - Inline scripts are prohibited; CSP must include script-src with nonces
+      - Cookie attributes: HttpOnly, Secure, SameSite=Strict for session cookies
+
+  - id: SEC-0007
+    title: Dependency vulnerability scanning in CI
+    level: MUST
+    owner: Security Team
+    applied-to:
+      languages: [ALL]
+      frameworks: [ALL]
+      types: [ALL]
+    since: "0.1.0"
+    description: CI pipelines must scan dependencies for known vulnerabilities.
+    content: |
+      Scanning tools by ecosystem:
+      - Java: OWASP dependency-check or Snyk
+      - Python: pip-audit or safety
+      - Node.js: npm audit
+      - Go: govulncheck
+      - C#: dotnet list package --vulnerable
+      - Terraform: tfsec or checkov
+      Critical and high severity vulnerabilities must block the build.
+      Medium severity vulnerabilities must be resolved within 30 days.

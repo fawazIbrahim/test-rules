@@ -1,0 +1,117 @@
+rules:
+  - id: OBS-0001
+    title: Structured JSON logging in all deployed environments
+    level: MUST
+    owner: SRE Team
+    applied-to:
+      languages: [ALL]
+      frameworks: [ALL]
+      types: [api, worker, batch, cli]
+    since: "0.1.0"
+    description: All services must emit structured JSON logs in deployed environments.
+    content: |
+      Mandatory log fields: timestamp, level, message, service_name,
+      trace_id, span_id. Optional fields: user_id, request_id, duration_ms.
+      Logging libraries:
+      - Java: Logback with JSON encoder
+      - Python: structlog or python-json-logger
+      - Go: slog with JSON handler
+      - TypeScript: pino
+      - C#: Serilog with JSON formatter
+      Human-readable output is permitted only when LOG_FORMAT=text
+      (local development).
+
+  - id: OBS-0002
+    title: Distributed tracing with OpenTelemetry
+    level: MUST
+    owner: SRE Team
+    applied-to:
+      languages: [ALL]
+      frameworks: [ALL]
+      types: [api, worker]
+    since: "0.1.0"
+    description: Services must instrument with OpenTelemetry for distributed tracing.
+    content: |
+      Auto-instrumentation must be enabled for HTTP clients/servers,
+      database drivers, and message brokers. Custom spans are added
+      for significant business operations. Trace context propagation
+      uses W3C Trace Context headers for HTTP and Kafka headers for
+      async messaging. Sampling rate is 10% for production, 100% for
+      staging.
+
+  - id: OBS-0003
+    title: RED metrics for every service
+    level: MUST
+    owner: SRE Team
+    applied-to:
+      languages: [ALL]
+      frameworks: [ALL]
+      types: [api, worker]
+    since: "0.1.0"
+    description: Every service must expose Rate, Error, and Duration metrics.
+    content: |
+      Metrics must be exported to the OpenTelemetry Collector:
+      - Rate: requests per second (http_server_requests_total)
+      - Errors: error rate by status code (http_server_errors_total)
+      - Duration: request latency histogram (http_server_duration_seconds)
+      Additional metrics for workers:
+      - Messages processed per second
+      - Consumer lag
+      - Processing duration histogram
+      Metrics endpoint: /metrics (Prometheus format) or OTLP push.
+
+  - id: OBS-0004
+    title: Log levels must follow severity conventions
+    level: MUST
+    owner: SRE Team
+    applied-to:
+      languages: [ALL]
+      frameworks: [ALL]
+      types: [ALL]
+    since: "0.1.0"
+    description: Log entries must use the correct severity level.
+    content: |
+      Level usage:
+      - ERROR: unrecoverable failures that need immediate attention (alerts fire)
+      - WARN: recoverable issues, degraded behavior, retries exhausted
+      - INFO: significant business events, request/response summaries
+      - DEBUG: detailed diagnostic information, disabled in production
+      Logging at ERROR for expected conditions (e.g., user not found)
+      is prohibited. High-volume per-request field logging must use DEBUG.
+
+  - id: OBS-0005
+    title: Health check endpoints for all backend services
+    level: MUST
+    owner: Platform Team
+    applied-to:
+      languages: [ALL]
+      frameworks: [ALL]
+      types: [api, worker, batch]
+    since: "0.1.0"
+    description: Backend services must expose liveness and readiness health check endpoints.
+    content: |
+      Endpoints:
+      - /health/live: returns 200 if the process is running (liveness)
+      - /health/ready: returns 200 if the service can handle traffic (readiness)
+      Readiness checks verify critical dependencies (database, cache,
+      message broker). Health checks must not perform expensive operations.
+      Kubernetes probes are configured against these endpoints.
+
+  - id: OBS-0006
+    title: Frontend performance monitoring
+    level: SHOULD
+    owner: Frontend Guild
+    applied-to:
+      languages: [typescript, javascript]
+      frameworks: [react, angular, vue]
+      types: [spa, ssr]
+    since: "0.2.0"
+    description: Frontend applications should collect Core Web Vitals and error telemetry.
+    content: |
+      Instrument with the web-vitals library to collect:
+      - Largest Contentful Paint (LCP)
+      - Interaction to Next Paint (INP)
+      - Cumulative Layout Shift (CLS)
+      Client-side JavaScript errors must be captured and reported with
+      stack traces, user agent, and URL. Use the shared frontend
+      telemetry SDK that sends to the OpenTelemetry Collector.

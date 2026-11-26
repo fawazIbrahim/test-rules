@@ -1,0 +1,151 @@
+rules:
+  - id: CMD-0001
+    title: Spring Boot applications use Maven wrapper
+    level: MUST
+    owner: Backend Guild
+    applied-to:
+      languages: [java, kotlin]
+      frameworks: [spring]
+      types: [api, worker, batch]
+    since: "0.1.0"
+    description: Spring Boot projects must use the Maven wrapper for reproducible builds.
+    content: |
+      The repository must include mvnw and .mvn/ directory. Build
+      commands use ./mvnw instead of a system-installed Maven.
+      Standard commands:
+      - Build: ./mvnw clean package
+      - Test: ./mvnw test
+      - Run: ./mvnw spring-boot:run
+
+  - id: CMD-0002
+    title: Python projects use Poetry for dependency management
+    level: MUST
+    owner: Backend Guild
+    applied-to:
+      languages: [python]
+      frameworks: [fastapi, django]
+      types: [api, worker, batch, cli]
+    since: "0.1.0"
+    description: Python projects must use Poetry for dependency and virtual environment management.
+    content: |
+      The repository must contain a pyproject.toml managed by Poetry.
+      A poetry.lock file must be committed for reproducible installs.
+      Standard commands:
+      - Install: poetry install
+      - Test: poetry run pytest
+      - Lint: poetry run ruff check .
+      - Run: poetry run uvicorn app.main:app (FastAPI) or poetry run python manage.py runserver (Django)
+
+  - id: CMD-0003
+    title: Node.js projects use npm with lockfile
+    level: MUST
+    owner: Frontend Guild
+    applied-to:
+      languages: [typescript, javascript]
+      frameworks: [react, angular, vue, nestjs, express, node]
+      types: [spa, ssr, api]
+    since: "0.1.0"
+    description: Node.js projects must use npm and commit the package-lock.json.
+    content: |
+      The repository must contain package.json and package-lock.json.
+      CI must use npm ci (not npm install) for deterministic installs.
+      Standard scripts must be defined in package.json:
+      - npm run build
+      - npm test
+      - npm run lint
+      - npm start (for server applications)
+      - npm run dev (for local development with hot reload)
+
+  - id: CMD-0004
+    title: Go projects use standard go toolchain
+    level: MUST
+    owner: Platform Team
+    applied-to:
+      languages: [go]
+      frameworks: [ALL]
+      types: [api, cli, worker]
+    since: "0.1.0"
+    description: Go projects must use the standard go toolchain with modules enabled.
+    content: |
+      The repository must contain go.mod and go.sum files.
+      Standard commands:
+      - Build: go build ./...
+      - Test: go test ./...
+      - Lint: golangci-lint run
+      - Vet: go vet ./...
+      A Makefile is recommended for orchestrating multi-step builds.
+
+  - id: CMD-0005
+    title: .NET projects use dotnet CLI
+    level: MUST
+    owner: Backend Guild
+    applied-to:
+      languages: [csharp]
+      frameworks: [dotnet]
+      types: [api, worker, batch]
+    since: "0.1.0"
+    description: .NET projects must use the dotnet CLI for build, test, and run commands.
+    content: |
+      The solution file (.sln) must be at the repository root.
+      Standard commands:
+      - Build: dotnet build
+      - Test: dotnet test
+      - Run: dotnet run --project src/MyService
+      - Publish: dotnet publish -c Release
+      Global.json should pin the SDK version.
+
+  - id: CMD-0006
+    title: Terraform projects use standard plan/apply workflow
+    level: MUST
+    owner: Cloud Engineering
+    applied-to:
+      languages: [ALL]
+      frameworks: [ALL]
+      types: [iac]
+    since: "0.1.0"
+    description: Terraform projects must follow the init/plan/apply workflow in CI.
+    content: |
+      Standard commands:
+      - Init: terraform init
+      - Validate: terraform validate
+      - Plan: terraform plan -out=tfplan (on PR)
+      - Apply: terraform apply tfplan (on merge to main)
+      - Format check: terraform fmt -check
+      Plans must be saved as artifacts and reviewed before apply.
+
+  - id: CMD-0007
+    title: Quarkus projects use Quarkus CLI or Maven wrapper
+    level: MUST
+    owner: Backend Guild
+    applied-to:
+      languages: [java, kotlin]
+      frameworks: [quarkus]
+      types: [function, api]
+    since: "0.2.0"
+    description: Quarkus projects must use the Quarkus CLI or Maven wrapper for builds.
+    content: |
+      Standard commands:
+      - Dev mode: quarkus dev or ./mvnw quarkus:dev
+      - Test: ./mvnw test
+      - Native build: ./mvnw package -Pnative
+      - Build: ./mvnw package
+      Native builds must be tested in CI before deployment.
+
+  - id: CMD-0008
+    title: React projects use Create React App or Vite
+    level: SHOULD
+    owner: Frontend Guild
+    applied-to:
+      languages: [typescript]
+      frameworks: [react]
+      types: [spa]
+    since: "0.2.0"
+    description: React SPA projects should use Vite as the build tool.
+    content: |
+      Vite is the preferred build tool for React SPAs due to fast HMR
+      and optimized production builds. CRA is acceptable for existing
+      projects but should not be chosen for new ones.
+      Standard scripts:
+      - npm run dev (Vite dev server)
+      - npm run build (production build)
+      - npm run preview (preview production build locally)

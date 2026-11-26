@@ -1,0 +1,135 @@
+rules:
+  - id: ERR-0001
+    title: APIs must return structured error responses
+    level: MUST
+    owner: Architecture Board
+    applied-to:
+      languages: [ALL]
+      frameworks: [ALL]
+      types: [api]
+    since: "0.1.0"
+    description: API error responses must follow the standard error format.
+    content: |
+      All error responses must include:
+      - HTTP status code matching the error category
+      - JSON body: {"error": {"code": "<DOMAIN>-<NUMBER>", "message": "...", "details": [...]}}
+      - Correlation/trace ID in response headers
+      Internal details (stack traces, SQL errors) must never be exposed
+      to callers. Validation errors use 400 with field-level detail array.
+      5xx errors are logged at ERROR level with full stack trace internally.
+
+  - id: ERR-0002
+    title: Spring Boot services use @ControllerAdvice for exception handling
+    level: MUST
+    owner: Backend Guild
+    applied-to:
+      languages: [java, kotlin]
+      frameworks: [spring]
+      types: [api]
+    since: "0.1.0"
+    description: Spring Boot APIs must centralize exception handling in @ControllerAdvice.
+    content: |
+      A global @ControllerAdvice class handles:
+      - Business exceptions mapped to 4xx responses
+      - Validation exceptions (MethodArgumentNotValidException) mapped to 400
+      - Unexpected exceptions mapped to 500 with generic message
+      Controllers must not contain try-catch blocks for error response
+      formatting. Business exceptions extend a base exception class that
+      carries an error code and HTTP status.
+
+  - id: ERR-0003
+    title: FastAPI services use exception handlers
+    level: MUST
+    owner: Backend Guild
+    applied-to:
+      languages: [python]
+      frameworks: [fastapi]
+      types: [api]
+    since: "0.1.0"
+    description: FastAPI services must register global exception handlers for consistent errors.
+    content: |
+      Register handlers via app.exception_handler() for:
+      - Custom business exceptions (BusinessError -> 4xx)
+      - Pydantic ValidationError -> 422 with field details
+      - Unhandled exceptions -> 500 with generic message
+      Route functions raise domain exceptions; they do not catch and
+      format errors themselves. Use Python's exception chaining
+      (raise BusinessError from original) to preserve stack context.
+
+  - id: ERR-0004
+    title: Go services use error wrapping with context
+    level: MUST
+    owner: Platform Team
+    applied-to:
+      languages: [go]
+      frameworks: [ALL]
+      types: [api, cli, worker]
+    since: "0.1.0"
+    description: Go functions must wrap errors with context using fmt.Errorf and %w.
+    content: |
+      Every error return must add context about what the function was
+      doing: fmt.Errorf("loading user %s: %w", userID, err). Sentinel
+      errors are defined as package-level variables for expected error
+      conditions. Callers use errors.Is() and errors.As() for matching.
+      Panics are reserved for programmer errors; never use panic for
+      expected runtime failures.
+
+  - id: ERR-0005
+    title: .NET services use middleware for exception handling
+    level: MUST
+    owner: Backend Guild
+    applied-to:
+      languages: [csharp]
+      frameworks: [dotnet]
+      types: [api]
+    since: "0.1.0"
+    description: .NET APIs must use exception-handling middleware for consistent error responses.
+    content: |
+      A global exception-handling middleware catches unhandled exceptions
+      and maps them to ProblemDetails (RFC 7807) responses. Business
+      exceptions inherit from a base exception with ErrorCode and
+      StatusCode properties. Controllers throw exceptions; they do not
+      return error responses directly. The middleware logs the exception
+      and returns a sanitized response.
+
+  - id: ERR-0006
+    title: Retry with exponential backoff for transient failures
+    level: MUST
+    owner: Architecture Board
+    applied-to:
+      languages: [ALL]
+      frameworks: [ALL]
+      types: [api, worker, batch]
+    since: "0.1.0"
+    description: Calls to external services must implement retry with exponential backoff.
+    content: |
+      HTTP clients calling other services must retry on 429 and 5xx
+      responses with exponential backoff and jitter. Configuration:
+      - Maximum retries: 3
+      - Initial delay: 100ms
+      - Maximum delay: 5 seconds
+      - Jitter: randomized
+      Use the framework's retry library (Spring Retry, Tenacity for
+      Python, Polly for .NET). Retries must be logged at WARN level.
+      Non-idempotent requests (POST without idempotency key) must not
+      be retried automatically.
+
+  - id: ERR-0007
+    title: Circuit breaker for critical downstream dependencies
+    level: SHOULD
+    owner: Architecture Board
+    applied-to:
+      languages: [ALL]
+      frameworks: [ALL]
+      types: [api, worker]
+    since: "0.2.0"
+    description: Services should implement circuit breakers for critical external dependencies.
+    content: |
+      When a downstream service fails repeatedly, the circuit opens to
+      prevent cascading failures and allow recovery. Use:
+      - Java: Resilience4j CircuitBreaker
+      - Python: tenacity with circuit-breaker wrapper
+      - .NET: Polly CircuitBreaker
+      - Go: sony/gobreaker
+      Circuit state changes must emit metrics and log at WARN level.
+      Fallback responses should degrade gracefully, not error immediately.

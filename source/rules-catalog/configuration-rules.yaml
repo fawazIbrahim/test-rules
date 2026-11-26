@@ -1,0 +1,110 @@
+rules:
+  - id: CFG-0001
+    title: Configuration via environment variables
+    level: MUST
+    owner: Platform Team
+    applied-to:
+      languages: [ALL]
+      frameworks: [ALL]
+      types: [api, worker, batch, function]
+    since: "0.1.0"
+    description: Runtime configuration must be provided via environment variables.
+    content: |
+      Environment-specific values (database URLs, API endpoints, feature
+      flags) are injected via environment variables, not config files
+      baked into the artifact. The twelve-factor app methodology applies.
+      A .env.example file documents all required variables with dummy
+      values. Defaults must be safe (e.g., debug=false, log_level=INFO).
+
+  - id: CFG-0002
+    title: Secrets retrieved from Vault at runtime
+    level: MUST
+    owner: Security Team
+    applied-to:
+      languages: [ALL]
+      frameworks: [ALL]
+      types: [api, worker, batch, function]
+    since: "0.1.0"
+    description: Application secrets must be fetched from Vault, not stored in config files.
+    content: |
+      Services retrieve secrets via:
+      - Vault Agent sidecar injecting into files (Kubernetes)
+      - Vault SDK client in application startup (non-Kubernetes)
+      Environment variables may contain the Vault path, not the secret
+      value. Secret caching TTL must not exceed 1 hour. Rotation-aware
+      clients must handle secret refresh without restart.
+
+  - id: CFG-0003
+    title: Terraform variables must have descriptions and types
+    level: MUST
+    owner: Cloud Engineering
+    applied-to:
+      languages: [ALL]
+      frameworks: [ALL]
+      types: [iac]
+    since: "0.1.0"
+    description: All Terraform variables must include type constraints and descriptions.
+    content: |
+      Every variable block must include:
+      - description: what the variable configures
+      - type: explicit type constraint (string, number, bool, list, map)
+      - default: only if the variable has a sensible default
+      - validation: for variables with constrained value sets
+      Sensitive variables must include sensitive = true. Variable names
+      use snake_case. Outputs must also include descriptions.
+
+  - id: CFG-0004
+    title: Spring profiles for environment configuration
+    level: MUST
+    owner: Backend Guild
+    applied-to:
+      languages: [java, kotlin]
+      frameworks: [spring]
+      types: [api, worker, batch]
+    since: "0.1.0"
+    description: Spring Boot projects must use profiles for environment-specific configuration.
+    content: |
+      Configuration files:
+      - application.yml: shared defaults
+      - application-local.yml: local development overrides
+      - application-test.yml: test configuration
+      Environment-specific values are injected via SPRING_PROFILES_ACTIVE
+      and environment variables. Secrets are never stored in YAML files.
+      Profile-specific files must not duplicate shared configuration.
+
+  - id: CFG-0005
+    title: Feature flags for progressive rollout
+    level: SHOULD
+    owner: Platform Team
+    applied-to:
+      languages: [ALL]
+      frameworks: [ALL]
+      types: [api, spa, ssr]
+    since: "0.2.0"
+    description: New features with rollout risk should use feature flags.
+    content: |
+      Feature flags enable:
+      - Gradual percentage-based rollout
+      - Instant kill-switch for broken features
+      - A/B testing capabilities
+      Use the centralized feature flag service (LaunchDarkly or
+      equivalent). Flags must be cleaned up within 30 days of full
+      rollout. Flag evaluation must be cached to avoid per-request
+      latency. Stale flags (unused for 90 days) are reported and removed.
+
+  - id: CFG-0006
+    title: .NET projects use Options pattern for configuration
+    level: MUST
+    owner: Backend Guild
+    applied-to:
+      languages: [csharp]
+      frameworks: [dotnet]
+      types: [api, worker, batch]
+    since: "0.1.0"
+    description: .NET services must use the Options pattern for strongly-typed configuration.
+    content: |
+      Configuration is bound to POCO classes via IOptions<T>,
+      IOptionsSnapshot<T>, or IOptionsMonitor<T>. Validation attributes
+      on options classes ensure configuration is correct at startup.
+      Configuration sources (appsettings.json, env vars, Vault) are
+      composed in Program.cs. Magic strings for config keys are prohibited.

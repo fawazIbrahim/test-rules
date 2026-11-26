@@ -1,0 +1,112 @@
+rules:
+  - id: DATA-0001
+    title: Use migrations for all schema changes
+    level: MUST
+    owner: Platform Team
+    applied-to:
+      languages: [ALL]
+      frameworks: [ALL]
+      types: [api, worker, batch]
+    since: "0.1.0"
+    description: All database schema changes must go through versioned migration scripts.
+    content: |
+      Schema changes are applied via the framework's migration tool:
+      - Java/Spring: Flyway (SQL-based migrations)
+      - Python/FastAPI: Alembic
+      - Python/Django: Django migrations
+      - .NET: Entity Framework migrations
+      - Go: golang-migrate
+      Migrations are forward-only. Manual DDL in production is prohibited.
+      Rollback scripts must be provided for every migration.
+
+  - id: DATA-0002
+    title: Database connections must use connection pooling
+    level: MUST
+    owner: Platform Team
+    applied-to:
+      languages: [ALL]
+      frameworks: [ALL]
+      types: [api, worker]
+    since: "0.1.0"
+    description: Services must use connection pooling with configured limits.
+    content: |
+      Connection pool settings:
+      - Minimum pool size: 2
+      - Maximum pool size: 10 (adjust per service load)
+      - Connection timeout: 5 seconds
+      - Idle timeout: 10 minutes
+      Java/Spring uses HikariCP. Python uses asyncpg pool or SQLAlchemy
+      pool. Go uses pgx pool. .NET uses built-in ADO.NET pooling.
+      Services with more than 20 expected concurrent connections must
+      use PgBouncer as an external pooler.
+
+  - id: DATA-0003
+    title: Event-sourced aggregates use Kafka for event publication
+    level: MUST
+    owner: Architecture Board
+    applied-to:
+      languages: [ALL]
+      frameworks: [ALL]
+      types: [api, worker]
+    since: "0.1.0"
+    description: Domain events persisted via event sourcing must be published to Kafka.
+    content: |
+      Services using event sourcing must:
+      - Store events in an append-only event store (PostgreSQL table)
+      - Publish events to Kafka using the transactional outbox pattern
+      - Include correlation_id and causation_id in every event
+      - Version event schemas via Schema Registry
+      Direct dual-writes (write to DB and Kafka without outbox) are
+      prohibited due to consistency risks.
+
+  - id: DATA-0004
+    title: Spring Data JPA repositories must use projections for reads
+    level: SHOULD
+    owner: Backend Guild
+    applied-to:
+      languages: [java, kotlin]
+      frameworks: [spring]
+      types: [api]
+    since: "0.2.0"
+    description: Read queries should use DTO projections instead of loading full entities.
+    content: |
+      For read-heavy endpoints, define interface-based or class-based
+      projections in Spring Data JPA instead of fetching entire entities.
+      This reduces memory usage and prevents accidental lazy-loading
+      N+1 queries. Full entity loading is acceptable for write operations
+      where the entity will be modified and saved.
+
+  - id: DATA-0005
+    title: Django models must define database indexes explicitly
+    level: MUST
+    owner: Backend Guild
+    applied-to:
+      languages: [python]
+      frameworks: [django]
+      types: [ssr]
+    since: "0.2.0"
+    description: Django models must declare indexes in Meta for query-critical fields.
+    content: |
+      Fields used in WHERE clauses, JOIN conditions, or ORDER BY must
+      have indexes defined in the model's Meta.indexes list. Composite
+      indexes for common query patterns must be added proactively. The
+      django-debug-toolbar must be enabled in development to identify
+      missing indexes via slow query detection.
+
+  - id: DATA-0006
+    title: Go services use pgx for PostgreSQL access
+    level: MUST
+    owner: Platform Team
+    applied-to:
+      languages: [go]
+      frameworks: [ALL]
+      types: [api, worker]
+    since: "0.1.0"
+    description: Go services must use the pgx driver for PostgreSQL connections.
+    content: |
+      pgx provides connection pooling, prepared statements, and
+      LISTEN/NOTIFY support. Use pgx/v5 with the stdlib-compatible
+      interface when needed for compatibility with database/sql-based
+      libraries. Query parameters must use positional placeholders ($1,
+      $2), never string formatting. Transactions use pgx.Tx with
+      explicit Begin/Commit/Rollback.

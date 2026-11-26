@@ -1,0 +1,86 @@
+rules:
+  - id: CMN-0001
+    title: Repository must contain a README
+    level: MUST
+    owner: Platform Team
+    applied-to:
+      languages: [ALL]
+      frameworks: [ALL]
+      types: [ALL]
+    since: "0.1.0"
+    description: Every repository must have a README with setup instructions.
+    content: |
+      The README must include:
+      - Project purpose and description
+      - Prerequisites and system requirements
+      - Local development setup instructions
+      - How to run the application
+      - How to run tests
+      - Link to further documentation if applicable
+
+  - id: CMN-0002
+    title: CI pipeline must be defined in repository
+    level: MUST
+    owner: Platform Team
+    applied-to:
+      languages: [ALL]
+      frameworks: [ALL]
+      types: [ALL]
+    since: "0.1.0"
+    description: Every repository must have a CI pipeline that runs on every push.
+    content: |
+      The CI pipeline must at minimum:
+      - Run linting and static analysis
+      - Compile or build the project
+      - Execute the full test suite
+      - Fail the build if any step fails
+      Pipeline definitions live in the repository (e.g. .github/workflows/).
+
+  - id: CMN-0003
+    title: Code review required before merge
+    level: MUST
+    owner: Engineering Management
+    applied-to:
+      languages: [ALL]
+      frameworks: [ALL]
+      types: [ALL]
+    since: "0.1.0"
+    description: All changes must be reviewed by at least one other engineer.
+    content: |
+      Pull requests require at least one approval from a team member who
+      is not the author. Auto-merge without review is prohibited.
+      Reviewers must verify correctness, test coverage, and adherence
+      to coding standards.
+
+  - id: CMN-0004
+    title: Use semantic versioning for releases
+    level: SHOULD
+    owner: Platform Team
+    applied-to:
+      languages: [ALL]
+      frameworks: [ALL]
+      types: [ALL]
+    since: "0.1.0"
+    description: Released artifacts should follow semantic versioning.
+    content: |
+      Version numbers follow MAJOR.MINOR.PATCH:
+      - MAJOR for breaking changes
+      - MINOR for backward-compatible new features
+      - PATCH for backward-compatible bug fixes
+      Pre-release versions use suffixes like -alpha.1, -beta.2, -rc.1.
+
+  - id: CMN-0005
+    title: Repository must include a CODEOWNERS file
+    level: SHOULD
+    owner: Engineering Management
+    applied-to:
+      languages: [ALL]
+      frameworks: [ALL]
+      types: [ALL]
+    since: "0.2.0"
+    description: Repositories should define code ownership for review routing.
+    content: |
+      A CODEOWNERS file at the repository root maps paths to owning
+      teams. This ensures pull requests are automatically assigned to
+      the right reviewers. At minimum, a catch-all rule for the entire
+      repository must be present.

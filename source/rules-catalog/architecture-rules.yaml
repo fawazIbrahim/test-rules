@@ -1,0 +1,141 @@
+rules:
+  - id: ARCH-0001
+    title: Spring Boot services follow layered architecture
+    level: MUST
+    owner: Backend Guild
+    applied-to:
+      languages: [java, kotlin]
+      frameworks: [spring]
+      types: [api]
+    since: "0.1.0"
+    description: Spring Boot APIs must follow the controller-service-repository pattern.
+    content: |
+      Layers and their responsibilities:
+      - Controller: HTTP handling, request validation, response mapping
+      - Service: business logic, transaction boundaries
+      - Repository: data access via Spring Data JPA
+      Controllers must not contain business logic. Services must not
+      reference HttpServletRequest or other HTTP-specific types.
+      Cross-layer dependency goes top-down only.
+
+  - id: ARCH-0002
+    title: FastAPI services use dependency injection
+    level: MUST
+    owner: Backend Guild
+    applied-to:
+      languages: [python]
+      frameworks: [fastapi]
+      types: [api]
+    since: "0.1.0"
+    description: FastAPI services must use the Depends() mechanism for dependency injection.
+    content: |
+      Business logic lives in service classes injected via Depends().
+      Route functions must be thin: validate input, call service, return
+      response. Database sessions are injected via a dependency that
+      handles commit/rollback. Direct instantiation of services in route
+      handlers is prohibited.
+
+  - id: ARCH-0003
+    title: .NET services use clean architecture
+    level: MUST
+    owner: Backend Guild
+    applied-to:
+      languages: [csharp]
+      frameworks: [dotnet]
+      types: [api, worker]
+    since: "0.1.0"
+    description: .NET services must implement clean architecture with separated layers.
+    content: |
+      The Domain layer defines entities and interfaces. The Application
+      layer implements use cases via MediatR handlers. The Infrastructure
+      layer implements repository interfaces and external clients. The
+      API layer handles HTTP concerns only. Inner layers must not reference
+      outer layers. Use the Microsoft.Extensions.DependencyInjection
+      container for wiring.
+
+  - id: ARCH-0004
+    title: NestJS services use modular architecture
+    level: MUST
+    owner: Backend Guild
+    applied-to:
+      languages: [typescript]
+      frameworks: [nestjs]
+      types: [api]
+    since: "0.1.0"
+    description: NestJS services must organize code into self-contained modules.
+    content: |
+      Each business domain is a NestJS module with its own controller,
+      service, and data-access layer. Modules communicate through
+      well-defined interfaces, not direct imports of internal classes.
+      Shared concerns (auth, logging, error handling) live in a common
+      module. Circular module dependencies are prohibited.
+
+  - id: ARCH-0005
+    title: Serverless functions must be single-purpose
+    level: MUST
+    owner: Architecture Board
+    applied-to:
+      languages: [ALL]
+      frameworks: [ALL]
+      types: [function]
+    since: "0.1.0"
+    description: Each serverless function handles exactly one event type.
+    content: |
+      A function must respond to a single trigger (HTTP request, queue
+      message, scheduled event, or storage event). Combining multiple
+      event handlers in one function deployment is prohibited. Shared
+      business logic is extracted into library packages, not into a
+      monolithic function. Function timeout must be set to the minimum
+      viable value, not the platform maximum.
+
+  - id: ARCH-0006
+    title: Worker services implement idempotent message handling
+    level: MUST
+    owner: Backend Guild
+    applied-to:
+      languages: [ALL]
+      frameworks: [ALL]
+      types: [worker]
+    since: "0.1.0"
+    description: Message consumers must handle duplicate messages without side effects.
+    content: |
+      Kafka and queue consumers must implement idempotency via:
+      - Deduplication using message ID or business key
+      - Idempotent database operations (upsert instead of insert)
+      - Outbox pattern for producing downstream events
+      At-least-once delivery is assumed. Consumer offset commits must
+      happen after successful processing, not before.
+
+  - id: ARCH-0007
+    title: Batch jobs must be restartable
+    level: MUST
+    owner: Backend Guild
+    applied-to:
+      languages: [ALL]
+      frameworks: [ALL]
+      types: [batch]
+    since: "0.1.0"
+    description: Batch processes must be safe to restart from the point of failure.
+    content: |
+      Batch jobs must track progress (e.g., last-processed offset or
+      cursor) and resume from the last checkpoint on restart. Processing
+      must be idempotent so that reprocessing a batch does not corrupt
+      data. Jobs must emit progress metrics and support graceful
+      shutdown on SIGTERM.
+
+  - id: ARCH-0008
+    title: SPAs must implement client-side routing
+    level: MUST
+    owner: Frontend Guild
+    applied-to:
+      languages: [typescript, javascript]
+      frameworks: [react, angular, vue]
+      types: [spa]
+    since: "0.1.0"
+    description: Single-page applications must use client-side routing with proper code splitting.
+    content: |
+      SPAs must use the framework's standard router (React Router,
+      Angular Router, Vue Router) with lazy-loaded route chunks. The
+      initial bundle must not include code for routes the user has not
+      navigated to. Deep links must work correctly. The server must
+      return index.html for all client-side routes (SPA fallback).

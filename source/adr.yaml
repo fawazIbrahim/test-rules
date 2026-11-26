@@ -1,0 +1,537 @@
+records:
+  - id: "0001"
+    code: use-postgresql
+    title: Use PostgreSQL as primary database
+    status: Accepted
+    date: 2024-01-15
+    decider: Platform Team
+    rules-concerned: [DATA-0001, DATA-0002]
+    applied-to:
+      languages: [ALL]
+      frameworks: [ALL]
+      types: [api, worker, batch]
+    context: |
+      Backend services need a reliable relational database. The organization
+      evaluated MySQL, PostgreSQL, and CockroachDB. PostgreSQL offers the best
+      balance of JSONB support, extension ecosystem (PostGIS, pg_trgm), and
+      managed-service availability across cloud providers. Several teams already
+      run PostgreSQL in production, so operational knowledge exists.
+    decision: |
+      Adopt PostgreSQL 15+ as the primary relational database for all backend
+      services. Each service owns its own database schema; shared databases
+      are prohibited. Connection pooling via PgBouncer is mandatory for services
+      expecting more than 20 concurrent connections.
+    consequences: |
+      All new services must provision PostgreSQL. DBA team manages shared
+      clusters and provides Terraform modules. Teams migrating off MySQL
+      receive a six-month runway. Monitoring dashboards are standardized
+      on pg_stat_statements.
+
+  - id: "0002"
+    code: adopt-react-typescript
+    title: Standardize on React with TypeScript for frontend
+    status: Accepted
+    date: 2024-02-01
+    decider: Frontend Guild
+    rules-concerned: [CONV-0003, DEPS-0003]
+    applied-to:
+      languages: [typescript]
+      frameworks: [react]
+      types: [spa, ssr]
+    context: |
+      The frontend ecosystem was fragmented across Angular, Vue, and React.
+      Shared component reuse was near zero, and hiring was complicated by
+      requiring expertise in three frameworks. React has the largest community,
+      the richest ecosystem for SSR (Next.js), and the most available talent.
+    decision: |
+      All new frontend projects must use React with TypeScript. JavaScript-only
+      React projects are not permitted. For SSR, Next.js is the approved
+      meta-framework. Existing Angular and Vue applications may continue under
+      maintenance but must not add major features without a migration plan.
+    consequences: |
+      A shared component library (design system) is built in React. Training
+      budget for React/TypeScript upskilling is allocated for Q2. Angular and
+      Vue expertise naturally declines over time.
+
+  - id: "0003"
+    code: spring-boot-for-java-apis
+    title: Use Spring Boot for Java backend services
+    status: Accepted
+    date: 2024-02-15
+    decider: Backend Guild
+    rules-concerned: [ARCH-0001, DEPS-0001]
+    applied-to:
+      languages: [java, kotlin]
+      frameworks: [spring]
+      types: [api, worker, batch]
+    context: |
+      Java backend services used a mix of Dropwizard, Micronaut, and Spring
+      Boot. This fragmented shared libraries, observability instrumentation,
+      and deployment templates. Spring Boot has the widest adoption internally
+      (70% of services) and externally, with mature support for Kafka consumers,
+      scheduled jobs, and gRPC.
+    decision: |
+      Standardize on Spring Boot 3.x for all new Java and Kotlin backend
+      services. Quarkus is permitted for serverless functions where cold-start
+      time is critical (see ADR-0010). Existing Dropwizard services migrate
+      during their next major rewrite.
+    consequences: |
+      Shared Spring Boot starter libraries are published for logging,
+      security, and health checks. CI templates target Spring Boot layout.
+      Dropwizard expertise is no longer required for new hires.
+
+  - id: "0004"
+    code: fastapi-for-python-services
+    title: Adopt FastAPI for Python backend services
+    status: Accepted
+    date: 2024-03-01
+    decider: Backend Guild
+    rules-concerned: [ARCH-0002, DEPS-0002]
+    applied-to:
+      languages: [python]
+      frameworks: [fastapi]
+      types: [api, worker]
+    context: |
+      Python backend services used Flask and Django REST Framework. Flask
+      lacked built-in async support and automatic OpenAPI generation. Django
+      was considered too heavy for microservices. FastAPI provides async-first
+      design, automatic request validation via Pydantic, and OpenAPI docs
+      out of the box.
+    decision: |
+      New Python API services must use FastAPI. Django remains approved for
+      admin-heavy internal tools and SSR applications. Flask is deprecated
+      for new projects. Worker services consuming from Kafka or RabbitMQ
+      may use FastAPI's lifespan hooks or standalone asyncio consumers.
+    consequences: |
+      Shared FastAPI middleware packages are published for auth, logging,
+      and tracing. Teams on Flask receive migration guides. Pydantic v2
+      becomes the standard data-validation library for Python.
+
+  - id: "0005"
+    code: event-driven-kafka
+    title: Use Apache Kafka for asynchronous messaging
+    status: Accepted
+    date: 2024-03-15
+    decider: Architecture Board
+    rules-concerned: [INTF-0003, DATA-0003]
+    applied-to:
+      languages: [ALL]
+      frameworks: [ALL]
+      types: [api, worker]
+    context: |
+      Services communicated asynchronously via RabbitMQ, SQS, and direct
+      HTTP callbacks. This produced inconsistent retry behavior, no built-in
+      ordering guarantees, and poor visibility into message flows. Kafka
+      provides durable, ordered, replayable event streams and is already
+      used by the data platform team.
+    decision: |
+      Apache Kafka is the standard message broker for inter-service
+      asynchronous communication. RabbitMQ is permitted only for
+      short-lived task queues where ordering is irrelevant. Direct HTTP
+      callbacks between services are prohibited for async workflows.
+    consequences: |
+      A shared Kafka cluster is provisioned per environment. Schema
+      Registry with Avro is mandatory for all topics. Consumer lag
+      dashboards are added to the platform observability stack.
+
+  - id: "0006"
+    code: opentelemetry-standard
+    title: Adopt OpenTelemetry for distributed tracing and metrics
+    status: Accepted
+    date: 2024-04-01
+    decider: SRE Team
+    rules-concerned: [OBS-0001, OBS-0002, OBS-0003]
+    applied-to:
+      languages: [ALL]
+      frameworks: [ALL]
+      types: [ALL]
+    context: |
+      Tracing was inconsistent: Java services used Jaeger clients, Python
+      services used OpenCensus, and frontend had no tracing. Metrics were
+      split between StatsD (legacy) and Prometheus. This made cross-service
+      debugging time-consuming and incident response slow.
+    decision: |
+      All services must instrument with OpenTelemetry SDK for traces and
+      metrics. The OpenTelemetry Collector is the single export target;
+      backends (Jaeger, Prometheus, Grafana) sit behind the collector.
+      Legacy instrumentation must be replaced within two quarters.
+    consequences: |
+      Shared auto-instrumentation packages are published per language.
+      Trace context propagation (W3C Trace Context) is mandatory on all
+      HTTP and Kafka headers. SRE provides collector sidecar configs for
+      Kubernetes deployments.
+
+  - id: "0007"
+    code: terraform-for-iac
+    title: Standardize on Terraform for infrastructure provisioning
+    status: Accepted
+    date: 2024-04-15
+    decider: Cloud Engineering
+    rules-concerned: [CFG-0003]
+    applied-to:
+      languages: [ALL]
+      frameworks: [ALL]
+      types: [iac]
+    context: |
+      Infrastructure was provisioned via a mix of CloudFormation, Pulumi,
+      and manual console clicks. Drift detection was impossible and disaster
+      recovery plans were unreliable. Terraform has the broadest provider
+      coverage and the team has the most experience with it.
+    decision: |
+      All infrastructure must be defined in Terraform (1.6+). State is
+      stored in S3 with DynamoDB locking. Modules are versioned and
+      published to an internal registry. Manual cloud console changes
+      require an exception approved by Cloud Engineering.
+    consequences: |
+      Existing CloudFormation stacks are migrated over two quarters.
+      Pulumi is deprecated. CI pipelines run terraform plan on PR and
+      terraform apply on merge to main.
+
+  - id: "0008"
+    code: golang-for-platform-tools
+    title: Use Go for platform CLI tools and infrastructure services
+    status: Accepted
+    date: 2024-05-01
+    decider: Platform Team
+    rules-concerned: [CONV-0005, TEST-0004]
+    applied-to:
+      languages: [go]
+      frameworks: [ALL]
+      types: [cli, api, worker]
+    context: |
+      Internal CLI tools and infrastructure proxies were written in Python
+      and Bash. Distribution was painful (Python version conflicts, missing
+      dependencies). Go produces static binaries, starts instantly, and has
+      excellent concurrency primitives for proxy and gateway workloads.
+    decision: |
+      New platform CLI tools and infrastructure services (proxies, gateways,
+      operators) must be written in Go. Application-layer APIs remain in
+      Java or Python per their respective ADRs. Bash scripts longer than
+      50 lines must be rewritten in Go.
+    consequences: |
+      A Go project template with linting (golangci-lint), testing, and
+      Goreleaser is published. Platform engineers receive Go training.
+      Existing Python CLIs migrate when they receive their next major change.
+
+  - id: "0009"
+    code: dotnet-for-csharp-services
+    title: Use .NET 8 for C# backend services
+    status: Accepted
+    date: 2024-05-15
+    decider: Backend Guild
+    rules-concerned: [ARCH-0003]
+    applied-to:
+      languages: [csharp]
+      frameworks: [dotnet]
+      types: [api, worker, batch]
+    context: |
+      The payments and billing domain runs C# services on .NET Framework 4.8.
+      These services cannot run in Linux containers and block Kubernetes
+      migration. .NET 8 is LTS, runs on Linux, and provides minimal-API
+      patterns that reduce boilerplate.
+    decision: |
+      All new C# services must target .NET 8+. Existing .NET Framework
+      services must migrate to .NET 8 before their next major release.
+      Minimal API style is preferred for new endpoints; MVC controllers
+      are permitted for complex request pipelines.
+    consequences: |
+      Windows-only build agents are decommissioned after migration.
+      Shared NuGet packages for auth, logging, and health checks are
+      published targeting .NET 8. Teams receive migration workshops.
+
+  - id: "0010"
+    code: quarkus-for-serverless
+    title: Use Quarkus for JVM serverless functions
+    status: Accepted
+    date: 2024-06-01
+    decider: Architecture Board
+    rules-concerned: [PERF-0003]
+    applied-to:
+      languages: [java, kotlin]
+      frameworks: [quarkus]
+      types: [function]
+    context: |
+      Spring Boot functions on AWS Lambda suffered cold starts of 8-12
+      seconds, causing timeout errors on the first invocation after idle
+      periods. Quarkus native-image compilation reduces cold start to
+      under 500ms, making JVM languages viable for serverless.
+    decision: |
+      JVM-based serverless functions must use Quarkus with GraalVM native
+      compilation. Spring Boot is not approved for the function application
+      type. Teams may still use Spring Boot for long-running API, worker,
+      and batch services per ADR-0003.
+    consequences: |
+      A Quarkus function template with native-image CI is published.
+      Teams learn Quarkus dependency injection differences from Spring.
+      Lambda provisioned concurrency is no longer required as a cold-start
+      workaround.
+
+  - id: "0011"
+    code: nestjs-for-node-apis
+    title: Use NestJS for Node.js backend APIs
+    status: Accepted
+    date: 2024-06-15
+    decider: Backend Guild
+    rules-concerned: [ARCH-0004, DEPS-0004]
+    applied-to:
+      languages: [typescript]
+      frameworks: [nestjs]
+      types: [api]
+    context: |
+      Node.js APIs were built with raw Express, leading to inconsistent
+      project structures, ad-hoc dependency injection, and no standard
+      approach to validation or middleware ordering. NestJS provides an
+      opinionated structure inspired by Angular, with built-in DI, guards,
+      interceptors, and Swagger generation.
+    decision: |
+      New Node.js backend APIs must use NestJS with TypeScript. Express
+      remains as NestJS's underlying HTTP adapter but must not be used
+      standalone for new API projects. Fastify adapter is permitted when
+      benchmarks justify it.
+    consequences: |
+      A NestJS starter template with auth guard, logging interceptor,
+      and Swagger config is published. Express-only APIs migrate when
+      they undergo major rewrites.
+
+  - id: "0012"
+    code: mobile-react-native
+    title: Use React Native for cross-platform mobile apps
+    status: Accepted
+    date: 2024-07-01
+    decider: Mobile Guild
+    rules-concerned: [CONV-0006]
+    applied-to:
+      languages: [typescript]
+      frameworks: [react]
+      types: [mobile]
+    context: |
+      The company maintained separate iOS (Swift) and Android (Kotlin)
+      codebases for the customer app, doubling development cost and
+      causing feature-parity drift. React Native enables a single
+      codebase while still allowing native modules where needed.
+    decision: |
+      New mobile applications use React Native with TypeScript. Existing
+      native apps transition feature-by-feature using the brownfield
+      approach. Performance-critical screens (camera, AR) may use native
+      modules. Pure native development requires Architecture Board approval.
+    consequences: |
+      Mobile team structure shifts from iOS/Android silos to
+      feature-oriented squads. Shared React components from the web
+      design system are adapted for React Native. Native expertise
+      remains for module development but is no longer the default.
+
+  - id: "0013"
+    code: structured-logging-json
+    title: Adopt JSON structured logging across all services
+    status: Accepted
+    date: 2024-07-15
+    decider: SRE Team
+    rules-concerned: [OBS-0001, OBS-0004]
+    applied-to:
+      languages: [ALL]
+      frameworks: [ALL]
+      types: [api, worker, batch, cli]
+    context: |
+      Log parsing in the centralized log aggregator relied on fragile regex
+      patterns that broke when log formats changed. Plain-text logs made it
+      impossible to filter by request ID, user ID, or error code without
+      full-text search. JSON structured logging enables indexed fields and
+      reliable alerting.
+    decision: |
+      All services must emit logs in JSON format with a mandatory field
+      set: timestamp, level, message, service_name, trace_id, span_id.
+      Human-readable console output is permitted only in local development.
+      Log libraries must be configured to output JSON in all deployed
+      environments.
+    consequences: |
+      Shared logging configuration packages are published per language.
+      Log aggregator dashboards are rebuilt around structured fields.
+      Existing plain-text log formats are migrated within one quarter.
+
+  - id: "0014"
+    code: api-versioning-url-path
+    title: Use URL path versioning for REST APIs
+    status: Accepted
+    date: 2024-08-01
+    decider: Architecture Board
+    rules-concerned: [INTF-0001, INTF-0002]
+    applied-to:
+      languages: [ALL]
+      frameworks: [ALL]
+      types: [api]
+    context: |
+      API versioning was inconsistent: some services used header-based
+      versioning, some used query parameters, and some had no versioning
+      at all. This confused API consumers and made gateway routing complex.
+      URL path versioning (/v1/, /v2/) is the most visible and cacheable
+      approach, and aligns with the API gateway's routing model.
+    decision: |
+      All public and internal REST APIs must use URL path versioning
+      (e.g., /api/v1/resources). Major version increments indicate
+      breaking changes. Minor/patch versions are not reflected in the
+      URL. At most two major versions may be active simultaneously.
+    consequences: |
+      API gateway routes are simplified to path-based version matching.
+      Clients must update base URLs on major version bumps. API
+      documentation generators are configured to include version prefix.
+
+  - id: "0015"
+    code: vue-for-internal-tools
+    title: Permit Vue.js for internal admin tools
+    status: Accepted
+    date: 2024-08-15
+    decider: Frontend Guild
+    rules-concerned: []
+    applied-to:
+      languages: [typescript, javascript]
+      frameworks: [vue]
+      types: [spa]
+    context: |
+      While React is the standard for customer-facing frontends (ADR-0002),
+      several internal admin tools were already built with Vue. These tools
+      have small user bases (ops teams), low change frequency, and no need
+      for the shared React component library. Forcing migration would cost
+      effort with little return.
+    decision: |
+      Vue.js is permitted for internal admin SPAs that are not customer-
+      facing. New internal tools may choose Vue or React. Customer-facing
+      applications must still use React per ADR-0002. Vue projects must
+      use TypeScript and follow the same linting standards.
+    consequences: |
+      Internal tool teams retain Vue expertise. The shared design system
+      publishes a small Vue adapter for common components. Vue is excluded
+      from SSR and mobile application types.
+
+  - id: "0016"
+    code: django-for-admin-apps
+    title: Use Django for Python admin and internal tools
+    status: Accepted
+    date: 2024-09-01
+    decider: Backend Guild
+    rules-concerned: [ARCH-0002]
+    applied-to:
+      languages: [python]
+      frameworks: [django]
+      types: [ssr]
+    context: |
+      Internal tools like the operations dashboard and content management
+      system benefit from Django's built-in admin, ORM, and template
+      engine. FastAPI is optimized for APIs but lacks these batteries-
+      included features for server-rendered admin interfaces.
+    decision: |
+      Django is the approved framework for Python server-rendered
+      applications and internal admin tools. FastAPI remains the standard
+      for Python APIs (ADR-0004). Mixing Django and FastAPI in the same
+      service is prohibited.
+    consequences: |
+      Django projects use the standard project template with security
+      middleware pre-configured. Teams building internal tools default
+      to Django's admin instead of custom UIs where feasible.
+
+  - id: "0017"
+    code: angular-maintenance-mode
+    title: Place Angular in maintenance mode
+    status: Deprecated
+    date: 2024-09-15
+    decider: Frontend Guild
+    rules-concerned: [DEPS-0003]
+    applied-to:
+      languages: [typescript]
+      frameworks: [angular]
+      types: [spa, ssr]
+    context: |
+      With React adopted as the standard frontend framework (ADR-0002),
+      Angular applications receive only security patches and critical bug
+      fixes. No new features are developed in Angular. This ADR formalizes
+      the deprecation timeline.
+    decision: |
+      Angular is officially in maintenance mode. No new Angular projects
+      may be started. Existing Angular applications must have a migration
+      plan to React filed by Q4 2024. Security patches continue until
+      migration completes.
+    consequences: |
+      Angular expertise is not required for new hires. Training budget
+      shifts entirely to React. CI templates for Angular remain supported
+      but receive no enhancements.
+
+  - id: "0018"
+    code: express-for-lightweight-bff
+    title: Permit Express for lightweight BFF services
+    status: Accepted
+    date: 2024-10-01
+    decider: Backend Guild
+    rules-concerned: [ARCH-0004]
+    applied-to:
+      languages: [typescript]
+      frameworks: [express]
+      types: [api]
+    context: |
+      NestJS is the standard for Node.js APIs (ADR-0011), but Backend-
+      for-Frontend (BFF) services often need minimal logic — just
+      aggregation and response shaping. NestJS's module system adds
+      overhead for these thin proxies. Express with TypeScript is
+      sufficient and faster to set up.
+    decision: |
+      Express with TypeScript is permitted for BFF services that
+      aggregate fewer than five downstream APIs and contain no business
+      logic beyond response mapping. All other Node.js APIs must use
+      NestJS. Express BFFs must use the shared Express template.
+    consequences: |
+      A minimal Express BFF template with OpenTelemetry middleware and
+      typed HTTP clients is published. BFF services exceeding the scope
+      criteria must migrate to NestJS.
+
+  - id: "0019"
+    code: secrets-vault
+    title: Use HashiCorp Vault for secrets management
+    status: Accepted
+    date: 2024-10-15
+    decider: Security Team
+    rules-concerned: [SEC-0003, CFG-0002]
+    applied-to:
+      languages: [ALL]
+      frameworks: [ALL]
+      types: [ALL]
+    context: |
+      Secrets were stored in environment variables baked into Docker
+      images, committed to private repos in encrypted files, or managed
+      per-service in AWS Secrets Manager with no rotation policy. This
+      created sprawl, inconsistent access controls, and audit gaps.
+    decision: |
+      All application secrets (database credentials, API keys, TLS
+      certificates) must be stored in and retrieved from HashiCorp Vault.
+      Environment variables may reference Vault paths but must not contain
+      raw secret values in deployed configurations. Vault agent sidecar
+      is the preferred injection method in Kubernetes.
+    consequences: |
+      Platform team operates a Vault cluster per environment. Shared
+      client libraries wrap Vault SDK for each language. Secret rotation
+      policies are enforced at 90-day maximum. CI/CD pipelines use
+      short-lived Vault tokens.
+
+  - id: "0020"
+    code: kotlin-for-android-native
+    title: Use Kotlin for Android native modules
+    status: Accepted
+    date: 2024-11-01
+    decider: Mobile Guild
+    rules-concerned: [CONV-0007]
+    applied-to:
+      languages: [kotlin]
+      frameworks: [ALL]
+      types: [mobile]
+    context: |
+      React Native is the standard for cross-platform mobile (ADR-0012),
+      but performance-critical native Android modules still need to be
+      written. Java was the legacy choice, but Kotlin is now Google's
+      preferred language for Android, with null safety, coroutines, and
+      modern syntax that reduces boilerplate by 30-40%.
+    decision: |
+      All new Android native modules must be written in Kotlin. Existing
+      Java Android code may remain but new files must be Kotlin. Kotlin
+      coroutines are the standard for async operations, replacing
+      AsyncTask and RxJava.
+    consequences: |
+      Java-to-Kotlin migration tooling is available in Android Studio.
+      Shared Kotlin libraries for analytics and crash reporting are
+      published. Java-only Android expertise is no longer required.

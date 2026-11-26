@@ -1,0 +1,114 @@
+rules:
+  - id: INTF-0001
+    title: REST APIs must provide OpenAPI specification
+    level: MUST
+    owner: Architecture Board
+    applied-to:
+      languages: [ALL]
+      frameworks: [ALL]
+      types: [api]
+    since: "0.1.0"
+    description: Every REST API must publish an OpenAPI 3.0+ specification.
+    content: |
+      The OpenAPI spec must be:
+      - Generated from code annotations (not hand-written separately)
+      - Available at /api-docs or /openapi.json at runtime
+      - Validated in CI to prevent spec drift
+      - Published to the internal API catalog on each release
+      Breaking changes to the spec must increment the API major version.
+
+  - id: INTF-0002
+    title: REST APIs use consistent URL and response conventions
+    level: MUST
+    owner: Architecture Board
+    applied-to:
+      languages: [ALL]
+      frameworks: [ALL]
+      types: [api]
+    since: "0.1.0"
+    description: REST APIs must follow the organization's URL and response format conventions.
+    content: |
+      URL conventions:
+      - Use plural nouns: /api/v1/orders, not /api/v1/order
+      - Use kebab-case for multi-word resources: /api/v1/order-items
+      - Use path parameters for identity: /api/v1/orders/{orderId}
+      - Use query parameters for filtering: /api/v1/orders?status=active
+      Response format:
+      - Successful responses use the resource directly (not wrapped)
+      - Error responses use {"error": {"code": "...", "message": "..."}}
+      - Collections return {"data": [...], "pagination": {...}}
+
+  - id: INTF-0003
+    title: Kafka events use Avro schemas registered in Schema Registry
+    level: MUST
+    owner: Architecture Board
+    applied-to:
+      languages: [ALL]
+      frameworks: [ALL]
+      types: [api, worker]
+    since: "0.1.0"
+    description: All Kafka messages must use Avro serialization with schemas in Confluent Schema Registry.
+    content: |
+      Schema requirements:
+      - Every Kafka topic has a registered Avro schema
+      - Schema evolution must be BACKWARD compatible
+      - Schema names follow <domain>.<event-name> convention
+      - Fields use camelCase naming
+      - Every event includes: event_id (UUID), event_type, timestamp,
+        correlation_id, and source_service fields
+      Producers must validate messages against the schema before sending.
+
+  - id: INTF-0004
+    title: GraphQL APIs must define a schema-first approach
+    level: SHOULD
+    owner: Frontend Guild
+    applied-to:
+      languages: [typescript, java]
+      frameworks: [nestjs, spring]
+      types: [api]
+    since: "0.2.0"
+    description: GraphQL APIs should define the schema first, then implement resolvers.
+    content: |
+      The .graphql schema files are the contract. Resolvers implement
+      the schema, not the other way around. Schema changes go through
+      the same review process as REST API changes. Introspection must
+      be disabled in production. Query depth and complexity limits must
+      be configured to prevent abuse.
+
+  - id: INTF-0005
+    title: Library packages must maintain backward compatibility
+    level: MUST
+    owner: Platform Team
+    applied-to:
+      languages: [ALL]
+      frameworks: [ALL]
+      types: [library]
+    since: "0.1.0"
+    description: Shared library releases must not break consumers within the same major version.
+    content: |
+      Within a major version:
+      - Do not remove public methods, classes, or types
+      - Do not change method signatures
+      - Do not change default behavior
+      - New features are additive only
+      Breaking changes require a major version bump and a migration
+      guide. Deprecation warnings must be published at least one minor
+      version before removal.
+
+  - id: INTF-0006
+    title: gRPC services must use Protocol Buffers v3
+    level: MUST
+    owner: Architecture Board
+    applied-to:
+      languages: [java, go, csharp]
+      frameworks: [spring, dotnet]
+      types: [api, worker]
+    since: "0.2.0"
+    description: gRPC services must define contracts using Protocol Buffers version 3.
+    content: |
+      Proto files live in a shared api/ directory or dedicated proto
+      repository. Code generation is part of the build pipeline, not
+      committed to the repository. Services must implement health
+      checking via grpc.health.v1. Deadline propagation is mandatory
+      on all RPC calls. Proto breaking change detection runs in CI
+      using buf lint and buf breaking.

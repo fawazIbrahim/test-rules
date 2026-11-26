@@ -1,0 +1,149 @@
+rules:
+  - id: PERF-0001
+    title: API response time SLA
+    level: MUST
+    owner: SRE Team
+    applied-to:
+      languages: [ALL]
+      frameworks: [ALL]
+      types: [api]
+    since: "0.1.0"
+    description: API endpoints must meet response time SLAs under normal load.
+    content: |
+      Response time targets (p95):
+      - Read endpoints: < 200ms
+      - Write endpoints: < 500ms
+      - Search endpoints: < 1 second
+      Performance tests run in CI against a staging-like environment.
+      Endpoints exceeding targets must have an optimization plan or
+      documented exception. Pagination is mandatory for list endpoints.
+
+  - id: PERF-0002
+    title: Database query performance monitoring
+    level: MUST
+    owner: Platform Team
+    applied-to:
+      languages: [ALL]
+      frameworks: [ALL]
+      types: [api, worker, batch]
+    since: "0.1.0"
+    description: Slow database queries must be detected and addressed.
+    content: |
+      Slow query threshold: 500ms. Queries exceeding this threshold are
+      logged at WARN level with the full query plan. N+1 query detection
+      is enabled in development (Hibernate statistics for Java, Django
+      Debug Toolbar for Python, pgx logging for Go). Batch operations
+      must use bulk insert/update, not row-by-row processing.
+
+  - id: PERF-0003
+    title: Serverless function cold start budget
+    level: MUST
+    owner: Architecture Board
+    applied-to:
+      languages: [ALL]
+      frameworks: [ALL]
+      types: [function]
+    since: "0.1.0"
+    description: Serverless functions must start within the cold-start time budget.
+    content: |
+      Cold start budget: < 1 second for user-facing functions, < 3
+      seconds for background processing. Strategies:
+      - JVM functions use Quarkus native-image (ADR-0010)
+      - Python functions minimize import-time work
+      - Node.js functions use esbuild bundling
+      - Go functions are inherently fast
+      Dependency count directly impacts cold start; minimize imports.
+      Provisioned concurrency is a last resort, not the default.
+
+  - id: PERF-0004
+    title: Spring Boot applications must tune JVM settings
+    level: MUST
+    owner: Backend Guild
+    applied-to:
+      languages: [java, kotlin]
+      frameworks: [spring]
+      types: [api, worker, batch]
+    since: "0.1.0"
+    description: JVM heap and garbage collector settings must be tuned for the workload.
+    content: |
+      Container-aware JVM settings:
+      - Use -XX:MaxRAMPercentage=75 instead of fixed -Xmx
+      - Enable G1GC (default in JDK 17+)
+      - Set -XX:+UseContainerSupport (default in modern JDKs)
+      - Configure -XX:ActiveProcessorCount if CPU limits differ from requests
+      Heap dumps on OOM must be enabled: -XX:+HeapDumpOnOutOfMemoryError.
+      Thread pool sizes must be configured based on the number of
+      available processors, not hardcoded values.
+
+  - id: PERF-0005
+    title: Frontend bundle size budget
+    level: MUST
+    owner: Frontend Guild
+    applied-to:
+      languages: [typescript, javascript]
+      frameworks: [react, angular, vue]
+      types: [spa]
+    since: "0.1.0"
+    description: SPA initial bundle must stay within the size budget.
+    content: |
+      Bundle size limits (gzipped):
+      - Initial JS bundle: < 200 KB
+      - Initial CSS: < 50 KB
+      - Total initial load (including images): < 500 KB
+      CI runs bundle analysis and fails if limits are exceeded. Code
+      splitting via dynamic imports is mandatory for route-level chunks.
+      Tree-shaking must be verified for large dependencies. Use
+      bundlesize or size-limit as CI check.
+
+  - id: PERF-0006
+    title: Go services must use goroutine pools for concurrent work
+    level: SHOULD
+    owner: Platform Team
+    applied-to:
+      languages: [go]
+      frameworks: [ALL]
+      types: [api, worker]
+    since: "0.2.0"
+    description: Go services should bound goroutine creation using worker pools.
+    content: |
+      Unbounded goroutine creation under load causes memory exhaustion.
+      Use a semaphore pattern or worker pool library (e.g., errgroup
+      with SetLimit) to cap concurrent goroutines. HTTP servers must
+      configure ReadTimeout, WriteTimeout, and IdleTimeout. Context
+      cancellation must be propagated to all spawned goroutines.
+
+  - id: PERF-0007
+    title: Async operations in .NET must use async/await
+    level: MUST
+    owner: Backend Guild
+    applied-to:
+      languages: [csharp]
+      frameworks: [dotnet]
+      types: [api, worker]
+    since: "0.1.0"
+    description: I/O-bound operations in .NET must use async/await, never synchronous blocking.
+    content: |
+      All database calls, HTTP calls, and file I/O must use async
+      methods. Blocking on async code (Task.Result, Task.Wait(),
+      .GetAwaiter().GetResult()) is prohibited as it causes thread pool
+      starvation under load. ConfigureAwait(false) should be used in
+      library code. ValueTask is preferred for hot paths that often
+      complete synchronously.
+
+  - id: PERF-0008
+    title: Python async services use asyncio correctly
+    level: MUST
+    owner: Backend Guild
+    applied-to:
+      languages: [python]
+      frameworks: [fastapi]
+      types: [api, worker]
+    since: "0.1.0"
+    description: FastAPI async endpoints must not block the event loop.
+    content: |
+      Async route handlers must use await for all I/O operations.
+      CPU-bound work must be offloaded to a thread pool via
+      asyncio.to_thread() or run_in_executor(). Synchronous database
+      drivers (psycopg2) must not be used in async handlers; use
+      asyncpg or databases library instead. Blocking calls in async
+      code cause cascading latency for all concurrent requests.
